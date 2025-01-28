@@ -1,0 +1,114 @@
+blueprint:
+  name: Ikea Tradfri Shortcut Button E1812 (Z2M)
+  description: |
+    Perform actions based on how your button is pressed.
+    
+    **Notes:**
+    - the double press action requires latest zigbee firmware to be installed on the button
+    
+    **How does this work?**
+    The button emits four events when pressed:
+    - `on` - single press
+    - `off` - double press (only available on latest zigbee firmware)
+    - `brightness_move_up` - when the _start_ of a long press is detected
+    - `brightness_stop` - when the _end_ of a long press is detected
+    These events are mapped to four actions:
+    - `on` -> `Short Press Action`
+    - `off` -> `Double Press Action`
+    - `brightness_move_up` - `Begin Long Press Action`
+    - `brightness_stop` - `End Long Press Action`
+  domain: automation
+  source_url: https://raw.githubusercontent.com/harrisonhjones/ha-blueprints/refs/heads/main/ikea.tradfri.shortcut.button.e1812.z2m.blueprint.yaml
+  author: Harrison Jones (harrison@hhj.me)
+  homeassistant:
+    min_version: 2024.6.0 # 2024.6.0 introduced "input" below.
+  input:
+    shortcut_button_device:
+      name: Shortcut Button
+      description: The Ikea Tradfri shortcut button E1812 device
+      selector:
+        device:
+          multiple: false
+          filter:
+            - integration: mqtt
+              manufacturer: IKEA
+              # model: TRADFRI shortcut button (E1812)
+    short_press_action:
+      default: []
+      name: Short Press Action
+      description: This action will be perfomed when the button is pressed briefly.
+      selector:
+        action:
+    double_press_action:
+      default: []
+      name: Double Press Action
+      description: This action will be perfomed when the button is pressed briefly twice.
+      selector:
+        action:
+    long_press_start_action:
+      default: []
+      name: Begin Long Press Action
+      description: This action will be perfomed when the button is pressed for a long time.
+      selector:
+        action:
+    long_press_end_action:
+      default: []
+      name: End Long Press Action
+      description: This action will be perfomed when the button is released after a long time.
+      selector:
+        action:
+
+mode: parallel # TODO: Revisit; should this be an input?
+
+trigger:
+  - device_id: !input shortcut_button_device
+    domain: mqtt
+    platform: device
+    type: action
+    subtype: "on"
+    id: short_press
+  - device_id: !input shortcut_button_device
+    domain: mqtt
+    platform: device
+    type: action
+    subtype: "off"
+    id: double_press
+  - device_id: !input shortcut_button_device
+    domain: mqtt
+    platform: device
+    type: action
+    subtype: brightness_move_up
+    id: long_press_start
+  - device_id: !input shortcut_button_device
+    domain: mqtt
+    platform: device
+    type: action
+    subtype: brightness_end
+    id: long_press_end
+
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id:
+              - short_press
+        sequence: 
+          !input short_press_action
+      - conditions:
+          - condition: trigger
+            id:
+              - double_press
+        sequence:
+          !input double_press_action
+      - conditions:
+          - condition: trigger
+            id:
+              - long_press_start
+        sequence:
+          !input long_press_start_action
+      - conditions:
+          - condition: trigger
+            id:
+              - long_press_end
+        sequence:
+          !input long_press_end_action
