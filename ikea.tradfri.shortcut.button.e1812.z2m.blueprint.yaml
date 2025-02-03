@@ -83,7 +83,7 @@ trigger:
     domain: mqtt
     platform: device
     type: action
-    subtype: brightness_end
+    subtype: brightness_stop
     id: long_press_end
 
 action:
